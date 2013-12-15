@@ -1,1 +1,1 @@
-Go re-implementation of (Hipache)[https://github.com/dotcloud/hipache]
+Golang re-implementation of [Hipache](https://github.com/dotcloud/hipache)
