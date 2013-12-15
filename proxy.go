@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
 )
 
 type Proxy struct {
@@ -17,8 +18,19 @@ func NewProxy() *Proxy {
 func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	director := func(target *http.Request) {
 		originalUrl := r.URL.String()
-		hostHeader := "www.docker.com:80"
-		target.URL.Scheme = "http"
+		hostHeader := r.Host
+		backend, err := proxy.cache.GetBackend(hostHeader)
+		if err != nil {
+			log.Println("cache.GetBackend:", err)
+			return
+		}
+		log.Printf("DEBUG1: %#v\n", backend.URL)
+		target.URL, err = url.Parse(backend.URL)
+		log.Printf("DEBUG2: %#v\n", target.URL)
+		if err != nil {
+			//handle wrong URL backend error
+			return
+		}
 		target.URL.Host = hostHeader
 		target.Host = hostHeader
 		//TODO(samalba): do real http logging
