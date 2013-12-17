@@ -12,6 +12,7 @@ import (
 type Cache struct {
 	redisConn *redis.Client
 	random    *rand.Rand
+	config    *Config
 }
 
 type Backend struct {
@@ -27,14 +28,27 @@ type Backend struct {
 	PoolSize int
 }
 
-func NewCache() *Cache {
-	redisConn, err := redis.DialTimeout("tcp", "127.0.0.1:6379",
+func NewCache(config *Config) *Cache {
+	address := fmt.Sprintf("%s:%d", config.RedisHost, config.RedisPort)
+	redisConn, err := redis.DialTimeout("tcp", address,
 		time.Duration(10)*time.Second)
 	if err != nil {
 		log.Fatal("redis.DialTimeout: ", err)
 	}
+	if config.RedisDatabase > 0 {
+		r := redisConn.Cmd("select", config.RedisDatabase)
+		if r.Err != nil {
+			log.Fatal("redis.select: ", r.Err)
+		}
+	}
+	if config.RedisPassword != "" {
+		r := redisConn.Cmd("auth", config.RedisPassword)
+		if r.Err != nil {
+			log.Fatal("redis.auth: ", r.Err)
+		}
+	}
 	random := rand.New(rand.NewSource(time.Now().UnixNano()))
-	return &Cache{redisConn: redisConn, random: random}
+	return &Cache{redisConn, random, config}
 }
 
 func parseHostHeader(hostHeader string) string {
@@ -66,11 +80,11 @@ func findReply(replies []*redis.Reply) *redis.Reply {
 func (cache *Cache) GetBackend(hostHeader string) (*Backend, error) {
 	hostHeader = parseHostHeader(hostHeader)
 	r := cache.redisConn
-	r.Append("MULTI")
-	r.Append("LRANGE", "frontend:"+hostHeader, 0, -1)
-	r.Append("LRANGE", "frontend:*."+getDomainName(hostHeader), 0, -1)
-	r.Append("LRANGE", "frontend:*", 0, -1)
-	r.Append("EXEC")
+	r.Append("multi")
+	r.Append("lrange", "frontend:"+hostHeader, 0, -1)
+	r.Append("lrange", "frontend:*."+getDomainName(hostHeader), 0, -1)
+	r.Append("lrange", "frontend:*", 0, -1)
+	r.Append("exec")
 	for i := 0; i < 4; i++ {
 		// Only the reply of "EXEC" is relevant
 		r.GetReply()

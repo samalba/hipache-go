@@ -1,20 +1,23 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 )
 
-func runHTTPServer() {
-	log.Println("Started: 0.0.0.0:1080")
-	proxy := NewProxy()
-	err := http.ListenAndServe(":1080", proxy)
+func runHTTPServer(config *Config) {
+	address := fmt.Sprintf("0.0.0.0:%d", config.Server.Port)
+	log.Println("Started:", address)
+	proxy := NewProxy(config)
+	err := http.ListenAndServe(address, proxy)
 	if err != nil {
 		log.Fatal("http.ListenAndServe: ", err)
 	}
 }
 
 func main() {
-	//FIXME(samalba): handle config to choose the port (at least)
-	runHTTPServer()
+	config := NewConfig()
+	config.Parse()
+	runHTTPServer(config)
 }

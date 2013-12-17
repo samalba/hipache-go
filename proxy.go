@@ -9,10 +9,11 @@ import (
 
 type Proxy struct {
 	cache *Cache
+	config *Config
 }
 
-func NewProxy() *Proxy {
-	return &Proxy{cache: NewCache()}
+func NewProxy(config *Config) *Proxy {
+	return &Proxy{NewCache(config), config}
 }
 
 func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -24,9 +25,7 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			log.Println("cache.GetBackend:", err)
 			return
 		}
-		log.Printf("DEBUG1: %#v\n", backend.URL)
 		target.URL, err = url.Parse(backend.URL)
-		log.Printf("DEBUG2: %#v\n", target.URL)
 		if err != nil {
 			//handle wrong URL backend error
 			return
