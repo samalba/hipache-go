@@ -10,12 +10,17 @@ import (
 
 type Config struct {
 	Server struct {
-		Debug bool
+		Debug     bool
 		AccessLog string
-		Port int
+		Port      int
+		Https     struct {
+			Port int
+			Key  string
+			Cert string
+		}
 	}
-	RedisHost string
-	RedisPort int
+	RedisHost     string
+	RedisPort     int
 	RedisDatabase int
 	RedisPassword string
 }

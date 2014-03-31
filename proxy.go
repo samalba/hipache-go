@@ -8,7 +8,7 @@ import (
 )
 
 type Proxy struct {
-	cache *Cache
+	cache  *Cache
 	config *Config
 }
 
